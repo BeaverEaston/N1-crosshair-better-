@@ -1,2 +1,2 @@
 # N1-crosshair-better-
-the Pros dont need overly complex crosshairs,using this and level your strengh up
+# press F5 to open dot crosshairs setting
