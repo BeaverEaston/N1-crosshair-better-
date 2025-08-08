@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         N1 crosshair better!
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Customizable static dot crosshair with control panel for Narrow.One
+// @version      1.9
+// @description  Customizable static dot crosshair with control panel for Narrow.One (F8 hotkey fixed)
 // @author       Beaverite
 // @match        https://narrow.one/
 // @grant        GM_addStyle
@@ -10,190 +10,273 @@
 
 (function() {
     'use strict';
-    const style = document.createElement('style');
-    style.textContent = `
+    console.log("[Crosshair] Script loaded for Narrow.One (F8 hotkey fixed)");
+    GM_addStyle(`
         #crosshair-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; z-index: 2147483647;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 2147483647 !important;
+            display: block !important;
         }
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .dot-crosshair { border-radius: 50%; position: absolute; transform: translate(-50%, -50%); }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .dot-crosshair {
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            visibility: visible !important;
+        }
         #crosshair-control-panel {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(15, 15, 25, 0.95); border-radius: 10px; padding: 20px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7); border: 1px solid rgba(90, 150, 255, 0.4);
-            z-index: 2147483647; width: 320px; font-family: 'Segoe UI', sans-serif;
-            color: #e0e0ff; display: none; backdrop-filter: blur(5px);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 15, 25, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(90, 150, 255, 0.4);
+            z-index: 2147483647 !important;
+            width: 320px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #e0e0ff;
+            display: none;
+            backdrop-filter: blur(5px);
         }
-        .panel-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(90, 150, 255, 0.3); }
-        .panel-header h2 { margin: 0; font-size: 1.5rem; font-weight: 600; color: #5a96ff; }
-        .panel-header p { margin: 8px 0 0; font-size: 0.85rem; color: #a0a0d0; }
-        .control-group { margin-bottom: 18px; }
-        .group-title { margin-bottom: 12px; font-size: 1.1rem; font-weight: 500; color: #8a6dff; display: flex; align-items: center; }
-        .group-title i { margin-right: 8px; color: #5a96ff; }
-        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .control-label { font-size: 0.95rem; color: #b0b0d0; width: 60%; }
-        .control-input { width: 60%; display: flex; align-items: center; }
-        input[type="range"] { width: 100%; height: 6px; background: rgba(90, 150, 255, 0.2); border-radius: 3px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #5a96ff; border-radius: 50%; cursor: pointer; box-shadow: 0 0 5px rgba(90, 150, 255, 0.8); }
-        .value-display { width: 40px; text-align: center; font-size: 0.9rem; color: #5a96ff; margin-left: 10px; font-weight: 500; }
-        .color-pickers { display: flex; justify-content: space-between; margin-top: 10px; }
-        .color-picker { display: flex; flex-direction: column; align-items: center; width: 48%; }
-        .color-label { font-size: 0.85rem; margin-bottom: 6px; color: #b0b0d0; }
-        input[type="color"] { width: 40px; height: 30px; border: 1px solid rgba(90, 150, 255, 0.3); background: rgba(20, 25, 40, 0.8); cursor: pointer; border-radius: 4px; }
-        .close-btn { position: absolute; top: 12px; right: 12px; background: rgba(200, 60, 60, 0.2); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; color: #ff6b6b; border: 1px solid rgba(255, 107, 107, 0.3); font-size: 1.1rem; }
-        .close-btn:hover { background: rgba(200, 60, 60, 0.4); color: #ff3b3b; }
-        .hotkey-hint { text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(90, 150, 255, 0.2); font-size: 0.85rem; color: #8a8ac0; }
-        .key-option { display: inline-block; padding: 5px 10px; margin: 0 5px; background: rgba(90, 150, 255, 0.2); border-radius: 4px; cursor: pointer; border: 1px solid rgba(90, 150, 255, 0.3); }
-        .key-option.selected { background: rgba(90, 150, 255, 0.5); color: white; }
-        .fas { display: inline-block; font-style: normal; font-variant: normal; text-rendering: auto; line-height: 1; font-family: "Font Awesome 5 Free"; font-weight: 900; }
-        .fa-ruler:before { content: "\\f545"; }
-        .fa-palette:before { content: "\\f53f"; }
-        .fa-keyboard:before { content: "\\f11c"; }
-    `;
-    document.head.appendChild(style);
-    const container = document.createElement('div');
-    container.id = 'crosshair-container';
-    document.body.appendChild(container);
-    const crosshair = document.createElement('div');
-    crosshair.id = 'crosshair';
-    container.appendChild(crosshair);
-    const controlPanel = document.createElement('div');
-    controlPanel.id = 'crosshair-control-panel';
-    document.body.appendChild(controlPanel);
-    controlPanel.innerHTML = `
-        <div class="close-btn" id="closePanel">×</div>
-        <div class="panel-header">
-            <h2>Crosshair Control Panel</h2>
-            <p>Customize your static dot crosshair</p>
-        </div>
-        <div class="control-group">
-            <div class="group-title"><i class="fas fa-ruler"></i> Size Settings</div>
-            <div class="control-row">
-                <div class="control-label">Dot Size</div>
-                <div class="control-input">
-                    <input type="range" id="dotSize" min="2" max="30" value="8">
-                    <span class="value-display" id="sizeValue">8</span>
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(90, 150, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #6ab0ff;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        .close-btn:hover {
+            background: rgba(255, 107, 107, 0.15);
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #a0b0ff;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 5px;
+            background: rgba(90, 150, 255, 0.2);
+            border-radius: 5px;
+            outline: none;
+            margin-right: 10px;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6ab0ff;
+            cursor: pointer;
+        }
+        .value-display {
+            min-width: 30px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .color-container {
+            display: flex;
+            gap: 10px;
+        }
+        .color-picker {
+            display: flex;
+            align-items: center;
+        }
+        .color-picker label {
+            margin-right: 8px;
+            font-size: 14px;
+        }
+        .color-picker input[type="color"] {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+        .hotkey-info {
+            margin-top: 20px;
+            padding: 8px;
+            background: rgba(30, 40, 60, 0.6);
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .hotkey-info span {
+            font-weight: 600;
+            color: #6ab0ff;
+        }
+    `);
+    const init = () => {
+        console.log("[Crosshair] Initialization started (F8 hotkey)");
+        if (!document.body) {
+            setTimeout(init, 100);
+            return;
+        }
+        if (document.getElementById('crosshair-container')) {
+            console.log("[Crosshair] Already initialized, skipping");
+            return;
+        }
+        const container = document.createElement('div');
+        container.id = 'crosshair-container';
+        document.body.appendChild(container);
+        const crosshair = document.createElement('div');
+        crosshair.id = 'crosshair';
+        container.appendChild(crosshair);
+        const controlPanel = document.createElement('div');
+        controlPanel.id = 'crosshair-control-panel';
+        document.body.appendChild(controlPanel);
+        controlPanel.innerHTML = `
+            <div class="panel-header">
+                <div class="panel-title">Crosshair Settings</div>
+                <button id="closePanel" class="close-btn">×</button>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Dot Size</label>
+                <div class="slider-container">
+                    <input type="range" id="dotSize" min="1" max="20" value="4">
+                    <div class="value-display"><span id="sizeValue">4</span>px</div>
                 </div>
             </div>
-            <div class="control-row">
-                <div class="control-label">Outline Thickness</div>
-                <div class="control-input">
-                    <input type="range" id="dotThickness" min="0" max="8" value="2">
-                    <span class="value-display" id="thicknessValue">2</span>
+            <div class="control-group">
+                <label class="control-label">Outline Thickness</label>
+                <div class="slider-container">
+                    <input type="range" id="dotThickness" min="0" max="10" value="1">
+                    <div class="value-display"><span id="thicknessValue">1</span>px</div>
                 </div>
             </div>
-        </div>
-        <div class="control-group">
-            <div class="group-title"><i class="fas fa-palette"></i> Color Settings</div>
-            <div class="color-pickers">
-                <div class="color-picker">
-                    <div class="color-label">Fill Color</div>
-                    <input type="color" id="innerColor" value="#ff3355">
-                </div>
-                <div class="color-picker">
-                    <div class="color-label">Outline Color</div>
-                    <input type="color" id="outerColor" value="#ffffff">
-                </div>
-            </div>
-        </div>
-        <div class="control-group">
-            <div class="group-title"><i class="fas fa-keyboard"></i> Hotkey Settings</div>
-            <div class="control-row">
-                <div class="control-label">Toggle Panel Key</div>
-                <div class="control-input">
-                    <div id="keyOptions">
-                        <span class="key-option" data-key="F3">F3</span>
-                        <span class="key-option" data-key="F6">F6</span>
-                        <span class="key-option" data-key="F8">F8</span>
-                        <span class="key-option" data-key="F9">F9</span>
+            <div class="control-group">
+                <label class="control-label">Colors</label>
+                <div class="color-container">
+                    <div class="color-picker">
+                        <label for="innerColor">Inner:</label>
+                        <input type="color" id="innerColor" value="#ffffff">
+                    </div>
+                    <div class="color-picker">
+                        <label for="outerColor">Outer:</label>
+                        <input type="color" id="outerColor" value="#000000">
                     </div>
                 </div>
             </div>
-            <div class="hotkey-hint">
-                Current hotkey: <span id="currentHotkey">F3</span> (Press to show/hide panel)
+            <div class="hotkey-info">
+                Toggle panel with: <span>F8</span>
             </div>
-            <div class="hotkey-hint" style="color:#4caf50; margin-top:5px;">
-                F3 is a safe key with no browser conflicts
-            </div>
-        </div>
-    `;
-    const closePanel = document.getElementById('closePanel');
-    const dotSize = document.getElementById('dotSize');
-    const sizeValue = document.getElementById('sizeValue');
-    const dotThickness = document.getElementById('dotThickness');
-    const thicknessValue = document.getElementById('thicknessValue');
-    const innerColor = document.getElementById('innerColor');
-    const outerColor = document.getElementById('outerColor');
-    const keyOptions = document.querySelectorAll('.key-option');
-    const currentHotkey = document.getElementById('currentHotkey');
-    let panelVisible = false, selectedHotkey = 'F3';
-    function update() {
-        const size = parseInt(dotSize.value);
-        const thickness = parseInt(dotThickness.value);
-        const innerClr = innerColor.value, outerClr = outerColor.value;
-        crosshair.innerHTML = '';
-        if (thickness > 0) {
-            const outerCircle = document.createElement('div');
-            outerCircle.className = 'dot-crosshair';
-            outerCircle.style.width = `${size + thickness * 2}px`;
-            outerCircle.style.height = `${size + thickness * 2}px`;
-            outerCircle.style.backgroundColor = outerClr;
-            crosshair.appendChild(outerCircle);
-        }
-        const innerCircle = document.createElement('div');
-        innerCircle.className = 'dot-crosshair';
-        innerCircle.style.width = `${size}px`;
-        innerCircle.style.height = `${size}px`;
-        innerCircle.style.backgroundColor = innerClr;
-        crosshair.appendChild(innerCircle);
-    }
-    function setup() {
-        document.addEventListener('keydown', function(e) {
-            if (e.key === selectedHotkey || e.code === selectedHotkey || e.key === selectedHotkey.toLowerCase()) {
-                e.preventDefault();
-                panelVisible = !panelVisible;
-                controlPanel.style.display = panelVisible ? 'block' : 'none';
+        `;
+        const closePanel = document.getElementById('closePanel');
+        const dotSize = document.getElementById('dotSize');
+        const sizeValue = document.getElementById('sizeValue');
+        const dotThickness = document.getElementById('dotThickness');
+        const thicknessValue = document.getElementById('thicknessValue');
+        const innerColor = document.getElementById('innerColor');
+        const outerColor = document.getElementById('outerColor');
+        let panelVisible = false;
+        const HOTKEY = 'F8';
+        const update = () => {
+            const size = parseInt(dotSize.value);
+            const thickness = parseInt(dotThickness.value);
+            const innerClr = innerColor.value;
+            const outerClr = outerColor.value;
+            crosshair.innerHTML = '';
+            if (thickness > 0) {
+                const outerCircle = document.createElement('div');
+                outerCircle.className = 'dot-crosshair';
+                outerCircle.style.width = `${size + thickness * 2}px`;
+                outerCircle.style.height = `${size + thickness * 2}px`;
+                outerCircle.style.backgroundColor = outerClr;
+                crosshair.appendChild(outerCircle);
             }
-        });
-        closePanel.addEventListener('click', () => {
-            controlPanel.style.display = 'none';
-            panelVisible = false;
-        });
-        dotSize.addEventListener('input', function() {
-            sizeValue.textContent = this.value;
-            update();
-        });
-        dotThickness.addEventListener('input', function() {
-            thicknessValue.textContent = this.value;
-            update();
-        });
-        innerColor.addEventListener('input', update);
-        outerColor.addEventListener('input', update);
-        keyOptions.forEach(option => {
-            option.addEventListener('click', function() {
-                keyOptions.forEach(opt => opt.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedHotkey = this.dataset.key;
-                currentHotkey.textContent = selectedHotkey;
-                localStorage.setItem('crosshairHotkey', selectedHotkey);
+            const innerCircle = document.createElement('div');
+            innerCircle.className = 'dot-crosshair';
+            innerCircle.style.width = `${size}px`;
+            innerCircle.style.height = `${size}px`;
+            innerCircle.style.backgroundColor = innerClr;
+            crosshair.appendChild(innerCircle);
+        };
+        const setup = () => {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === HOTKEY || e.code === HOTKEY) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    panelVisible = !panelVisible;
+                    controlPanel.style.display = panelVisible ? 'block' : 'none';
+                    console.log(`[Crosshair] Toggle panel with F8`);
+                }
+            }, true);
+            closePanel.addEventListener('click', () => {
+                controlPanel.style.display = 'none';
+                panelVisible = false;
             });
-        });
-    }
-    function setting() {
-        const savedHotkey = localStorage.getItem('crosshairHotkey');
-        if (savedHotkey) {
-            selectedHotkey = savedHotkey;
-            currentHotkey.textContent = savedHotkey;
-            keyOptions.forEach(option => {
-                if (option.dataset.key === savedHotkey)
-                    option.classList.add('selected');
+            dotSize.addEventListener('input', () => {
+                sizeValue.textContent = dotSize.value;
+                update();
+            });
+            dotThickness.addEventListener('input', () => {
+                thicknessValue.textContent = dotThickness.value;
+                update();
+            });
+            innerColor.addEventListener('input', update);
+            outerColor.addEventListener('input', update);
+        };
+        const setDefaults = () => {
+            sizeValue.textContent = dotSize.value;
+            thicknessValue.textContent = dotThickness.value;
+        };
+        update();
+        setDefaults();
+        setup();
+        console.log("[Crosshair] Initialization complete (F8 hotkey)");
+    };
+    const observer = new MutationObserver(() => {
+        if (!document.getElementById('crosshair-container')) {
+            console.log("[Crosshair] SPA navigation detected, re-initializing");
+            init();
+        }
+    });
+    const startScript = () => {
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            init();
+            observer.observe(document.body, { childList: true, subtree: true });
+        } else {
+            window.addEventListener('DOMContentLoaded', () => {
+                init();
+                observer.observe(document.body, { childList: true, subtree: true });
             });
         }
-    }
-    update();
-    setting();
-    setup();
+    };
+    startScript();
 })();
 
 // ..+---+
@@ -202,3 +285,6 @@
 // | I | +
 // | P |/.
 // +---+..
+//The final version has been finalized
+//R.I.P
+//Tell me what do you think of the color of this panel(QWQ)
