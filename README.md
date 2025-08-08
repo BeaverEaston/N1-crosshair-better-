@@ -1,2 +1,2 @@
 # N1-crosshair-better-
-# press F5 to open dot crosshairs setting
+# press F8 to open dot crosshairs setting
